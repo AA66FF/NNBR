@@ -180,17 +180,14 @@ class Player:
             else:
                 inputs.append(-1)
 
-        for hid in self.hidden_nodes:
-            hid = 0
-
         for i,inp in enumerate(inputs):
             for j,hid in enumerate(self.hidden_nodes):
-                hid += inp*self.weights_1[i][j]
-        
+                self.hidden_nodes[j] = inp*self.weights_1[i][j]
+
         for i,hid in enumerate(self.hidden_nodes):
             for j,out in enumerate(self.outputs):
-                out += hid*self.weights_2[i][j]
-            
+                self.outputs[j] = hid*self.weights_2[i][j]
+
         print(self.outputs)
 
     def see(self):
