@@ -146,8 +146,15 @@ class Player:
 
         self.eyes = []
         eye_number = 25
-        for i in range(eye_number):
-            self.eyes.append(Eye(self.x+15,self.y+15,-math.pi*0.25+i*math.pi*(1/(eye_number*2)),self.id))
+        for i in range(eye_number-7):
+            self.eyes.append(Eye(self.x+15,self.y+15,-math.pi*0.25+i*math.pi*(1/((eye_number-7)*2)),self.id))
+        self.eyes.append(Eye(self.x+15,self.y+15,-math.pi*0.375,self.id))
+        self.eyes.append(Eye(self.x+15,self.y+15,-math.pi*0.5,self.id))
+        self.eyes.append(Eye(self.x+15,self.y+15,-math.pi*0.75,self.id))
+        self.eyes.append(Eye(self.x+15,self.y+15,-math.pi,self.id))
+        self.eyes.append(Eye(self.x+15,self.y+15,math.pi*0.75,self.id))
+        self.eyes.append(Eye(self.x+15,self.y+15,math.pi*0.5,self.id))
+        self.eyes.append(Eye(self.x+15,self.y+15,math.pi*0.375,self.id))
 
         self.move_threshold = 3.5
 
