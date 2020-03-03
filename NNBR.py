@@ -6,10 +6,11 @@ screen_size = 1800,1000
 map_size_x = 2000
 map_size_y = 2000
 drag = 0.01
-global_timer = 0
+global_timer = 1
 players_start = 30
 players_remaining = players_start
-death_tick = 500
+death_tick = 800
+death_tick_damage = -6
 
 generation = 0
 
@@ -137,7 +138,7 @@ class Player:
         self.shoot_cooldown = 0
         self.movement_direction = movement_none
         self.ang_change = 0
-        self.hp = 5
+        self.hp = 10
         self.death_position = 0
         self.kills = 0
         self.last_hurt_by = None
@@ -353,7 +354,8 @@ while True:
     for i,player in enumerate(players):
         player.id = i
         if global_timer % death_tick == 0:
-            player.hp -= 1
+            if death_tick_damage > 0:
+                player.hp -= death_tick_damage
             player.last_hurt_by = None
         if player.death_position == 0:
             if player.hp <= 0:
@@ -363,7 +365,7 @@ while True:
                     killer = players[player.last_hurt_by]
                     try:
                         killer.kills += 1
-                        killer.health += 5
+                        killer.hp += 5
                     except:
                         players[random.randrange(len(players)-1)].kills += 1
                 else:
@@ -407,6 +409,8 @@ while True:
         vision_screen_pxarray[:] = (255,255,255)
         players_remaining = players_start
 
+    if global_timer % death_tick == 0:
+        death_tick_damage += 1
+
     pygame.display.flip()
-    
     global_timer += 1
