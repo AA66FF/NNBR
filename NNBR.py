@@ -9,8 +9,8 @@ drag = 0.01
 global_timer = 1
 players_start = 30
 players_remaining = players_start
-death_tick = 800
-death_tick_damage = -6
+death_tick = 400
+death_tick_damage = 0
 
 generation = 0
 
@@ -97,9 +97,12 @@ class Eye:
         self.ang = ang_offset
         self.player = player
         self.vision_jump = 10
-        self.seen = -2
+        self.see_player = False
+        self.see_edge = False
     
     def see(self):
+        self.see_player = False
+        self.see_edge = False
         see_point_x = self.x
         see_point_y = self.y
         jump_x = math.cos(self.ang+0.5*math.pi)*self.vision_jump
@@ -113,19 +116,18 @@ class Eye:
                 self.vision_jump = 25
             if see_point_x < 0 or see_point_y < 0:
                 pygame.draw.line(screen,0,(self.x-camera_x,self.y-camera_y),(see_point_x-camera_x,see_point_y-camera_y))
-                self.seen = -1
+                self.see_edge = True
                 return
             try:
                 pixel_below = vision_screen_pxarray[round(see_point_x),round(see_point_y)]
             except:
                 pygame.draw.line(screen,0,(self.x-camera_x,self.y-camera_y),(see_point_x-camera_x,see_point_y-camera_y))
-                self.seen = -1
+                self.see_edge = True
                 return
             if pixel_below != vision_screen.map_rgb(255,255,255) and pixel_below != self.player:
-                self.seen = pixel_below
+                self.see_player = True
                 pygame.draw.line(screen,0,(self.x-camera_x,self.y-camera_y),(see_point_x-camera_x,see_point_y-camera_y))
                 return
-        self.seen = -2
         pygame.draw.line(screen,0,(self.x-camera_x,self.y-camera_y),(see_point_x-camera_x,see_point_y-camera_y))
 
 class Player:
@@ -143,7 +145,7 @@ class Player:
         self.kills = 0
         self.last_hurt_by = None
 
-        self.hp_loss_on_attack = 0
+        self.hp_loss_on_attack = 0.1
 
         self.eyes = []
         eye_number = 25
@@ -160,7 +162,7 @@ class Player:
         self.move_threshold = 3.5
 
         self.hidden_nodes = []
-        for i in range(30):
+        for i in range(40):
             self.hidden_nodes.append(0)
 
         self.outputs = []
@@ -168,10 +170,11 @@ class Player:
             self.outputs.append(0)
 
         self.weights_1 = []
-        for i in range(eye_number+4):
+        for i in range(eye_number*2+4):
             self.weights_1.append([])
             for j in range(len(self.hidden_nodes)):
                 self.weights_1[i].append(-1+(random.random()*2))
+        self.hidden_nodes.append(1)
         self.weights_2 = []
         for i in range(len(self.hidden_nodes)):
             self.weights_2.append([])
@@ -195,15 +198,17 @@ class Player:
         inputs = []
 
         for eye in self.eyes:
-            if eye.seen == -2: 
-                inputs.append(-1)
-            elif eye.seen == -1:
-                inputs.append(0)
-            else:
+            if eye.see_edge:
                 inputs.append(1)
+            else:
+                inputs.append(-1)
+            if eye.see_player:
+                inputs.append(1)
+            else:
+                inputs.append(-1)
 
         self.hidden_nodes = []
-        for i in range(30):
+        for i in range(39):
             self.hidden_nodes.append(0)
 
         for i in range(3):
@@ -218,6 +223,8 @@ class Player:
         for i,inp in enumerate(inputs):
             for j,hid in enumerate(self.hidden_nodes):
                 self.hidden_nodes[j] += inp*self.weights_1[i][j]
+
+        self.hidden_nodes.append(1)
 
         for i,hid in enumerate(self.hidden_nodes):
             for j,out in enumerate(self.outputs):
@@ -242,18 +249,21 @@ class Player:
         if self.outputs[0] >= self.move_threshold and self.outputs[1] >= self.move_threshold:
             self.movement_direction = movement_forward_right
         
-        if self.outputs[2] <= -self.move_threshold:
-            self.ang -= 0.05
-        if self.outputs[2] >= self.move_threshold:
-            self.ang += 0.05
-        
         if self.outputs[3] >= self.move_threshold:
             self.spd = 3
+            if self.outputs[2] <= -self.move_threshold:
+                self.ang -= 0.05
+            if self.outputs[2] >= self.move_threshold:
+                self.ang += 0.05
             if self.shoot_cooldown <= 0:
                 self.shoot()
                 self.shoot_cooldown = 15
         else:
             self.spd = 5
+            if self.outputs[2] <= -self.move_threshold:
+                self.ang -= 0.08
+            if self.outputs[2] >= self.move_threshold:
+                self.ang += 0.08
 
     def see(self):
         for eye in self.eyes:
@@ -365,7 +375,7 @@ while True:
                     killer = players[player.last_hurt_by]
                     try:
                         killer.kills += 1
-                        killer.hp += 5
+                        killer.hp += 10
                     except:
                         players[random.randrange(len(players)-1)].kills += 1
                 else:
@@ -402,9 +412,10 @@ while True:
                     new_players.append(new_player)
 
         generation += 1
-        print("Generation "+str(generation))        
+        print("Generation "+str(generation))
+        death_tick_damage = 0
         players = new_players[0:29]
-        global_timer = 0
+        global_timer = 1
         screen.fill((255,255,255))
         vision_screen_pxarray[:] = (255,255,255)
         players_remaining = players_start
