@@ -93,10 +93,12 @@ class Bullet:
                 except:
                     pass
         except:
+            players[self.player].misses += 1
             self.collided = True
         
         self.lifetime -= 1
         if self.lifetime <= 0:
+            players[self.player].misses += 1
             self.collided = True
 
         self.x += math.cos(self.ang+0.5*math.pi)*self.spd
@@ -160,10 +162,9 @@ class Player:
         self.death_position = 0
         self.fitness = 0
         self.damage_dealt = 0
+        self.misses = 0
         self.kills = 0
         self.last_hurt_by = None
-
-        self.hp_loss_on_attack = 0.1
 
         self.eyes = []
         eye_number = 25
@@ -296,7 +297,6 @@ class Player:
         self.y-math.sin(self.ang+0.5*math.pi)+12,
         self.ang,
         self.id))
-        self.hp -= self.hp_loss_on_attack
 
     def update(self):
         self.see()
@@ -423,8 +423,9 @@ while True:
         new_players = []
 
         for player in players:
-            player.fitness += player.kills*50
-            player.fitness += player.damage_dealt
+            player.fitness += player.kills*80
+            player.fitness += player.damage_dealt*2
+            player.fitness -= player.misses
             player.fitness -= player.death_position*2
 
         players.sort(reverse=True,key=lambda player: player.fitness)
