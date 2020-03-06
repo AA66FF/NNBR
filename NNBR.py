@@ -3,14 +3,14 @@ import pygame, sys, random, math, time
 pygame.init()
 
 screen_size = 1800,1000
-map_size_x = 2000
-map_size_y = 2000
+map_size_x = 2500
+map_size_y = 2500
 drag = 0.01
 global_timer = 1
 players_start = 30
 players_remaining = players_start
-death_tick = 400
-death_tick_damage = 0
+death_tick = 500
+death_tick_damage = -1
 
 generation = 0
 
@@ -47,6 +47,21 @@ def rotate_center(image, angle):
     rot_image = rot_image.subsurface(rot_rect).copy()
     return rot_image
 
+def reproduce(player):
+    new_player = Player(random.randrange(100,map_size_x-100),random.randrange(100,map_size_y-100),0)
+    new_player.weights_1 = player.weights_1
+    new_player.weights_2 = player.weights_2
+
+    for j in range(len(new_player.weights_1)):
+        for k in range(len(new_player.weights_1[j])):
+            new_player.weights_1[j][k] += -0.15+random.random()*0.3
+
+    for j in range(len(new_player.weights_2)):
+        for k in range(len(new_player.weights_2[j])):
+            new_player.weights_2[j][k] += -0.15+random.random()*0.3
+
+    return new_player
+
 class Bullet:
     def __init__(self,x,y,ang,player):
         self.x = x
@@ -73,6 +88,7 @@ class Bullet:
                 try:
                     if players[pixel_below].hp > 0:
                         players[pixel_below].hp -= 1
+                        players[self.player].damage_dealt += 1
                         players[pixel_below].last_hurt_by = self.player
                 except:
                     pass
@@ -142,6 +158,8 @@ class Player:
         self.ang_change = 0
         self.hp = 10
         self.death_position = 0
+        self.fitness = 0
+        self.damage_dealt = 0
         self.kills = 0
         self.last_hurt_by = None
 
@@ -192,7 +210,7 @@ class Player:
         self.image = rotate_center(self.image,math.degrees(self.ang))
 
     def __repr__(self):
-        return str((self.x,self.y))
+        return str((self.x,self.y,self.fitness))
         
     def ai(self):
         inputs = []
@@ -353,13 +371,22 @@ while True:
 
     key = pygame.key.get_pressed()
     if key[pygame.K_LEFT]: 
-        camera_x -= 12
+        camera_x -= 30
     if key[pygame.K_RIGHT]:
-        camera_x += 12
+        camera_x += 30
     if key[pygame.K_UP]:
-        camera_y -= 12
+        camera_y -= 30
     if key[pygame.K_DOWN]:
-        camera_y += 12
+        camera_y += 30
+
+    if camera_x < 0:
+        camera_x = 0
+    if camera_x > map_size_x-screen_size[0]:
+        camera_x = map_size_x-screen_size[0]
+    if camera_y < 0:
+        camera_y = 0
+    if camera_y > map_size_y-screen_size[1]:
+        camera_y = map_size_y-screen_size[1]
 
     for i,player in enumerate(players):
         player.id = i
@@ -394,27 +421,35 @@ while True:
 
     if players_remaining <= 1:
         new_players = []
+
         for player in players:
-            if player.kills > 0:
-                for i in range(player.kills):
-                    new_player = Player(random.randrange(100,map_size_x-100),random.randrange(100,map_size_y-100),0)
-                    new_player.weights_1 = player.weights_1
-                    new_player.weights_2 = player.weights_2
+            player.fitness += player.kills*50
+            player.fitness += player.damage_dealt
+            player.fitness -= player.death_position*2
 
-                    for j in range(len(new_player.weights_1)):
-                        for k in range(len(new_player.weights_1[j])):
-                            new_player.weights_1[j][k] += -0.15+random.random()*0.3
+        players.sort(reverse=True,key=lambda player: player.fitness)
 
-                    for j in range(len(new_player.weights_2)):
-                        for k in range(len(new_player.weights_2[j])):
-                            new_player.weights_2[j][k] += -0.15+random.random()*0.3
+        print("The results are in!")
+        fitnesses = []
+        for player in players:
+            fitnesses.append((player.fitness,player.id))
+        print(fitnesses)
 
-                    new_players.append(new_player)
+        players = players[0:10]
+
+        print("Creating new players...")
+
+        for player in players:
+            for i in range(3):
+                new_players.append(reproduce(player))
+
+        print(new_players)
+        
+        players = new_players
 
         generation += 1
         print("Generation "+str(generation))
         death_tick_damage = 0
-        players = new_players[0:29]
         global_timer = 1
         screen.fill((255,255,255))
         vision_screen_pxarray[:] = (255,255,255)
