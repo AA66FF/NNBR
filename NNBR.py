@@ -10,7 +10,7 @@ global_timer = 1
 players_start = 30
 players_remaining = players_start
 death_tick = 500
-death_tick_damage = -1
+death_tick_damage = -2
 
 generation = 0
 
@@ -54,11 +54,11 @@ def reproduce(player):
 
     for j in range(len(new_player.weights_1)):
         for k in range(len(new_player.weights_1[j])):
-            new_player.weights_1[j][k] += -0.15+random.random()*0.3
+            new_player.weights_1[j][k] += -0.1+random.random()*0.2
 
     for j in range(len(new_player.weights_2)):
         for k in range(len(new_player.weights_2[j])):
-            new_player.weights_2[j][k] += -0.15+random.random()*0.3
+            new_player.weights_2[j][k] += -0.1+random.random()*0.2
 
     return new_player
 
@@ -67,9 +67,9 @@ class Bullet:
         self.x = x
         self.y = y
         self.ang = ang
-        self.spd = 20
+        self.spd = 35
         self.player = player
-        self.lifetime = 20
+        self.lifetime = 16
         self.collision_box = pygame.Rect(x+2,y+2,6,6)
         self.collided = False
         self.base_image = pygame.Surface((10,10),flags=pygame.SRCALPHA)
@@ -80,6 +80,12 @@ class Bullet:
         self.image = rotate_center(self.image,math.degrees(self.ang))
     
     def update(self):
+        self.x += math.cos(self.ang+0.5*math.pi)*self.spd
+        self.y += -math.sin(self.ang+0.5*math.pi)*self.spd
+
+        self.image = self.base_image
+        self.image = rotate_center(self.image,math.degrees(self.ang))
+
         try:
             pixel_below = vision_screen_pxarray[round(self.x+5),round(self.y+5)]
             if self.x > 0 and self.x < map_size_x and self.y > 0 and self.y < map_size_y and\
@@ -101,12 +107,6 @@ class Bullet:
             players[self.player].misses += 1
             self.collided = True
 
-        self.x += math.cos(self.ang+0.5*math.pi)*self.spd
-        self.y += -math.sin(self.ang+0.5*math.pi)*self.spd
-
-        self.image = self.base_image
-        self.image = rotate_center(self.image,math.degrees(self.ang))
-
 class Eye:
     def __init__(self,x,y,ang_offset,player):
         self.x = x
@@ -114,7 +114,7 @@ class Eye:
         self.ang_offset = ang_offset
         self.ang = ang_offset
         self.player = player
-        self.vision_jump = 10
+        self.vision_jump = 25
         self.see_player = False
         self.see_edge = False
     
@@ -125,26 +125,26 @@ class Eye:
         see_point_y = self.y
         jump_x = math.cos(self.ang+0.5*math.pi)*self.vision_jump
         jump_y = -math.sin(self.ang+0.5*math.pi)*self.vision_jump
-        for i in range(30):
+        for i in range(20):
             see_point_x += jump_x
             see_point_y += jump_y
-            if i < 15:
-                self.vision_jump = 15
-            else:
+            if i < 10:
                 self.vision_jump = 25
+            else:
+                self.vision_jump = 35
             if see_point_x < 0 or see_point_y < 0:
-                pygame.draw.line(screen,0,(self.x-camera_x,self.y-camera_y),(see_point_x-camera_x,see_point_y-camera_y))
+                pygame.draw.line(screen,(0,0,210),(self.x-camera_x,self.y-camera_y),(see_point_x-camera_x,see_point_y-camera_y))
                 self.see_edge = True
                 return
             try:
                 pixel_below = vision_screen_pxarray[round(see_point_x),round(see_point_y)]
             except:
-                pygame.draw.line(screen,0,(self.x-camera_x,self.y-camera_y),(see_point_x-camera_x,see_point_y-camera_y))
+                pygame.draw.line(screen,(0,0,210),(self.x-camera_x,self.y-camera_y),(see_point_x-camera_x,see_point_y-camera_y))
                 self.see_edge = True
                 return
             if pixel_below != vision_screen.map_rgb(255,255,255) and pixel_below != self.player:
                 self.see_player = True
-                pygame.draw.line(screen,0,(self.x-camera_x,self.y-camera_y),(see_point_x-camera_x,see_point_y-camera_y))
+                pygame.draw.line(screen,(0,210,0),(self.x-camera_x,self.y-camera_y),(see_point_x-camera_x,see_point_y-camera_y))
                 return
         pygame.draw.line(screen,0,(self.x-camera_x,self.y-camera_y),(see_point_x-camera_x,see_point_y-camera_y))
 
@@ -167,7 +167,7 @@ class Player:
         self.last_hurt_by = None
 
         self.eyes = []
-        eye_number = 25
+        eye_number = 30
         for i in range(eye_number-7):
             self.eyes.append(Eye(self.x+15,self.y+15,-math.pi*0.25+i*math.pi*(1/((eye_number-7)*2)),self.id))
         self.eyes.append(Eye(self.x+15,self.y+15,-math.pi*0.375,self.id))
@@ -308,7 +308,7 @@ class Player:
         if self.ang < 0:
             self.ang += 2*math.pi
 
-        vision_screen_pxarray[round(self.x-4):round(self.x+34),round(self.y-4):round(self.y+34)] = (255,255,255)
+        vision_screen_pxarray[round(self.x-8):round(self.x+38),round(self.y-8):round(self.y+38)] = (255,255,255)
 
         if self.movement_direction == movement_forward:
             self.x += math.cos(self.ang+0.5*math.pi)*self.spd
@@ -345,7 +345,7 @@ class Player:
             self.y = map_size_y-100
 
         if self.hp > 0:
-            vision_screen_pxarray[round(self.x-4):round(self.x+34),round(self.y-4):round(self.y+34)] = (0,0,self.id)
+            vision_screen_pxarray[round(self.x-8):round(self.x+38),round(self.y-8):round(self.y+38)] = (0,0,self.id)
 
         self.image = self.base_image
         self.image = rotate_center(self.image,math.degrees(self.ang))
@@ -355,7 +355,7 @@ class Player:
 players = []
 bullets = []
 
-print("Generation 0")
+print("\nGeneration 0")
 
 for i in range(players_start):
     players.append(Player(random.randrange(100,map_size_x-100),random.randrange(100,map_size_y-100),i))
@@ -423,34 +423,40 @@ while True:
         new_players = []
 
         for player in players:
-            player.fitness += player.kills*80
+            player.fitness += player.kills*30
             player.fitness += player.damage_dealt*2
-            player.fitness -= player.misses
-            player.fitness -= player.death_position*2
+            player.fitness -= player.misses*2
+            player.fitness -= player.death_position
+            player.fitness += 300
 
         players.sort(reverse=True,key=lambda player: player.fitness)
 
         print("The results are in!")
-        fitnesses = []
+        fitnesses = "LEADERBOARD\n---------------------------------"
         for player in players:
-            fitnesses.append((player.fitness,player.id))
+            fitnesses += "\nPlayer "+str(player.id)+": "+str(player.fitness)+" points"
         print(fitnesses)
-
-        players = players[0:10]
 
         print("Creating new players...")
 
-        for player in players:
+        for i in range(6):
+            new_players.append(reproduce(players[0]))
+        for i in range(4):
+            new_players.append(reproduce(players[1]))
+        for player in players[2:4]:
             for i in range(3):
                 new_players.append(reproduce(player))
-
-        print(new_players)
+        for player in players[4:8]:
+            for i in range(2):
+                new_players.append(reproduce(player))
+        for player in players[8:14]:
+            new_players.append(reproduce(player))
         
         players = new_players
 
         generation += 1
-        print("Generation "+str(generation))
-        death_tick_damage = 0
+        print("\nGeneration "+str(generation))
+        death_tick_damage = -2
         global_timer = 1
         screen.fill((255,255,255))
         vision_screen_pxarray[:] = (255,255,255)
