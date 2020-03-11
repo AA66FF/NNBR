@@ -9,7 +9,7 @@ drag = 0.01
 global_timer = 1
 players_start = 30
 players_remaining = players_start
-death_tick = 500
+death_tick = 800
 death_tick_damage = -2
 
 generation = 0
@@ -164,7 +164,10 @@ class Player:
         self.damage_dealt = 0
         self.misses = 0
         self.kills = 0
+        self.deaths = 0
         self.last_hurt_by = None
+
+        self.color = (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255))
 
         self.eyes = []
         eye_number = 30
@@ -202,10 +205,11 @@ class Player:
 
         self.base_image = pygame.Surface((30,30),flags=pygame.SRCALPHA)
         self.base_image.fill((255,255,255,0))
+        pygame.draw.circle(self.base_image,self.color,(15,15),10,0)
         pygame.draw.circle(self.base_image,(0,0,0),(15,15),10,3)
-        pygame.draw.circle(self.base_image,(180,180,180),(10,6),4)
+        pygame.draw.circle(self.base_image,(200,200,200),(10,6),4)
         pygame.draw.circle(self.base_image,(255,0,0),(10,4),2)
-        pygame.draw.circle(self.base_image,(180,180,180),(20,6),4)
+        pygame.draw.circle(self.base_image,(200,200,200),(20,6),4)
         pygame.draw.circle(self.base_image,(255,0,0),(20,4),2)
         self.image = self.base_image
         self.image = rotate_center(self.image,math.degrees(self.ang))
@@ -226,24 +230,24 @@ class Player:
             else:
                 inputs.append(-1)
 
+        for i in range(3):
+            inputs.append(min(max(self.outputs[4+i],-1),1))
+
+        inputs.append(1)
+
         self.hidden_nodes = []
         for i in range(39):
             self.hidden_nodes.append(0)
 
-        for i in range(3):
-            inputs.append(min(max(self.outputs[4+i],-1),1))
+        self.hidden_nodes.append(1)
 
         self.outputs = []
         for i in range(7):
             self.outputs.append(0)
 
-        inputs.append(1)
-
         for i,inp in enumerate(inputs):
             for j,hid in enumerate(self.hidden_nodes):
                 self.hidden_nodes[j] += inp*self.weights_1[i][j]
-
-        self.hidden_nodes.append(1)
 
         for i,hid in enumerate(self.hidden_nodes):
             for j,out in enumerate(self.outputs):
@@ -407,6 +411,12 @@ while True:
                         players[random.randrange(len(players)-1)].kills += 1
                 else:
                     players[random.randrange(len(players)-1)].kills += 1
+                player.last_hurt_by = None
+                player.deaths += 1
+                player.hp = 10
+                vision_screen_pxarray[round(player.x-8):round(player.x+38),round(player.y-8):round(player.y+38)] = (255,255,255)
+                #player.x = random.randrange(100,map_size_x-100)
+                #player.y = random.randrange(100,map_size_y-100)
             #try:
             player.update()
             #except:
@@ -423,11 +433,11 @@ while True:
         new_players = []
 
         for player in players:
-            player.fitness += player.kills*30
+            player.fitness += player.kills*50
             player.fitness += player.damage_dealt*2
-            player.fitness -= player.misses*2
-            player.fitness -= player.death_position
-            player.fitness += 300
+            player.fitness -= player.misses
+            player.fitness -= player.death_position*2
+            player.fitness += 200
 
         players.sort(reverse=True,key=lambda player: player.fitness)
 
@@ -439,17 +449,17 @@ while True:
 
         print("Creating new players...")
 
-        for i in range(6):
+        for i in range(5):
             new_players.append(reproduce(players[0]))
         for i in range(4):
             new_players.append(reproduce(players[1]))
         for player in players[2:4]:
             for i in range(3):
                 new_players.append(reproduce(player))
-        for player in players[4:8]:
+        for player in players[4:9]:
             for i in range(2):
                 new_players.append(reproduce(player))
-        for player in players[8:14]:
+        for player in players[10:15]:
             new_players.append(reproduce(player))
         
         players = new_players
