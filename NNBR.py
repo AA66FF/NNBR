@@ -408,13 +408,14 @@ while True:
                         killer.kills += 1
                         killer.hp += 10
                     except:
-                        players[random.randrange(len(players)-1)].kills += 1
-                else:
-                    players[random.randrange(len(players)-1)].kills += 1
+                        pass
+                        #players[random.randrange(len(players)-1)].kills += 1
+                #else:
+                    #players[random.randrange(len(players)-1)].kills += 1
                 player.last_hurt_by = None
                 player.deaths += 1
-                player.hp = 10
-                vision_screen_pxarray[round(player.x-8):round(player.x+38),round(player.y-8):round(player.y+38)] = (255,255,255)
+                #player.hp = 10
+                #vision_screen_pxarray[round(player.x-8):round(player.x+38),round(player.y-8):round(player.y+38)] = (255,255,255)
                 #player.x = random.randrange(100,map_size_x-100)
                 #player.y = random.randrange(100,map_size_y-100)
             #try:
@@ -433,10 +434,10 @@ while True:
         new_players = []
 
         for player in players:
-            player.fitness += player.kills*50
+            player.fitness += player.kills*80
             player.fitness += player.damage_dealt*2
             player.fitness -= player.misses
-            player.fitness -= player.death_position*2
+            player.fitness -= player.death_position*3
             player.fitness += 200
 
         players.sort(reverse=True,key=lambda player: player.fitness)
